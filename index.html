@@ -93,7 +93,7 @@ html,body{background:var(--n);min-height:100vh;overflow-x:hidden}
   </div>
 </div>
 <div style="display:flex;gap:8px;margin:8px 14px">
-  <div style="flex:1;background:var(--c);border-radius:11px;padding:11px;text-align:center;border:1px solid var(--br)"><div style="font-size:20px;font-weight:800;color:var(--gr)" id="h-rounds-cnt">5</div><div style="font-size:10px;color:var(--t2)">جولات</div></div>
+  <div style="flex:1;background:var(--c);border-radius:11px;padding:11px;text-align:center;border:1px solid var(--br)"><div style="font-size:20px;font-weight:800;color:var(--gr)" id="h-rounds-cnt">5</div><div style="font-size:10px;color:var(--t2)">أيام تدريب</div></div>
   <div style="flex:1;background:var(--c);border-radius:11px;padding:11px;text-align:center;border:1px solid var(--br)"><div style="font-size:20px;font-weight:800;color:var(--bl)" id="h-ex-cnt">23</div><div style="font-size:10px;color:var(--t2)">تمرين</div></div>
   <div style="flex:1;background:var(--c);border-radius:11px;padding:11px;text-align:center;border:1px solid var(--br)"><div style="font-size:20px;font-weight:800;color:var(--yl)" id="h-done-cnt">0</div><div style="font-size:10px;color:var(--t2)">مكتمل</div></div>
 </div>
@@ -272,6 +272,7 @@ html,body{background:var(--n);min-height:100vh;overflow-x:hidden}
     <div style="flex:1"><label class="lbl">Emoji</label><input class="inp" id="e-emoji" placeholder="🏋️" style="text-align:center;font-size:18px"></div>
   </div>
   <div class="fd"><label class="lbl">طريقة الأداء (كل سطر = خطوة)</label><textarea class="inp" id="e-steps" style="height:80px;resize:none" placeholder="اسحب للصدر&#10;ارجع ببطء"></textarea></div>
+  <div class="fd"><label class="lbl">⚖️ الوزن المستهدف (كجم)</label><input class="inp" id="e-target-weight" type="number" placeholder="مثال: 35" style="text-align:center"></div>
   <div class="fd"><label class="lbl">الخطأ الشائع</label><input class="inp" id="e-error" placeholder="مثال: رمي الوزن بسرعة"></div>
   <div class="fd"><label class="lbl">نصيحة ذهبية</label><input class="inp" id="e-tip" placeholder="مثال: ركز على العضلة وليس الوزن"></div>
   <button class="gbtn" onclick="saveEx()">💾 حفظ التمرين</button>
@@ -283,7 +284,7 @@ html,body{background:var(--n);min-height:100vh;overflow-x:hidden}
 
 <script>
 var DB=[
-  {id:1,name:'السبت — Full Body خفيف',emoji:'🔥',tag:'سبت',desc:'جلسة تنشيط لكامل الجسم بدون إجهاد عالي.',note:'هذا اليوم ليس للضغط العالي.',
+  {id:1,name:'السبت — Full Body خفيف',emoji:'🏃',tag:'سبت',desc:'جلسة تنشيط لكامل الجسم بدون إجهاد عالي.',note:'هذا اليوم ليس للضغط العالي.',
    ex:[
     {name:'Shoulder Press',sets:'3',reps:'10',emoji:'🏋️',steps:['ادفع للأعلى مع شد البطن وعدم تقويس الظهر'],error:'تقويس أسفل الظهر',tip:'ثبت الكتف واسحب لوح الكتف للخلف'},
     {name:'Lat Pulldown',sets:'3',reps:'10',emoji:'🔵',steps:['اسحب للصدر مع تثبيت الجسم وتحكم كامل في النزول'],error:'الاندفاع بالجسم',tip:'ركز على سحب المرفقين للأسفل وليس اليدين'},
@@ -324,7 +325,7 @@ var DB=[
    ]}
 ];
 
-var HIST=[], USER={name:'محمد',age:25,weight:80,height:175}, STREAK=12, DONE_CNT=48;
+var HIST=[], USER={name:'رشيد الحسن',age:25,weight:80,height:175}, STREAK=0, DONE_CNT=0;
 var NID=6, CUR_DAY=2, CUR_EX=0, EDIT_RID=null, EDIT_RID_EX=null, EDIT_EI=null;
 var TMR=null, TSEC=0, CONSEC={};
 
@@ -459,14 +460,16 @@ function startWorkout(di,ei){
   CUR_DAY=di; CUR_EX=ei;
   var r=DB[di]; var ex=r.ex[ei];
   document.getElementById('wk-name').textContent=ex.name;
-  document.getElementById('wk-tgt').textContent='الهدف: '+ex.sets+' سيت × '+ex.reps+' تكرار';
+  var tw = ex.targetWeight ? ' — '+ex.targetWeight+' كجم' : '';
+  document.getElementById('wk-tgt').textContent='الهدف: '+ex.sets+' سيت × '+ex.reps+' تكرار'+tw;
   document.getElementById('wk-progress').textContent='تمرين '+(ei+1)+' من '+r.ex.length;
   document.getElementById('wk-round-tag').textContent=r.tag;
   var n=parseInt(ex.sets)||3, html='';
+  var tw=ex.targetWeight||'';
   for(var i=1;i<=n;i++){
     html+='<div class="wrow">'+
       '<div class="wn">'+i+'</div>'+
-      '<input type="number" inputmode="decimal" placeholder="وزن" class="wi">'+
+      '<input type="number" inputmode="decimal" placeholder="'+(tw?tw:'وزن')+'" class="wi" value="'+tw+'">'+
       '<span style="font-size:11px;color:var(--t2)">كجم</span>'+
       '<input type="number" inputmode="numeric" placeholder="×" class="wi" style="width:50px">'+
       '<div class="cc" onclick="this.classList.toggle(\'dn\');chkDone()">✓</div></div>';
@@ -547,7 +550,9 @@ function renderAdmin(){
         r.ex.map(function(ex,ei){
           return '<div style="padding:9px 13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(30,58,95,.45)">'+
             '<span style="font-size:16px">'+(ex.emoji||'🏋️')+'</span>'+
-            '<div style="flex:1"><div style="font-size:12px;font-weight:600">'+ex.name+'</div><div style="font-size:11px;color:var(--t2)">'+ex.sets+'×'+ex.reps+'</div></div>'+
+            '<div style="flex:1"><div style="font-size:12px;font-weight:600">'+ex.name+'</div><div style="font-size:11px;color:var(--t2)">'+ex.sets+'×'+ex.reps+(ex.targetWeight?' — '+ex.targetWeight+' كجم':'')+'</div></div>'+
+            '<div onclick="moveEx('+r.id+','+ei+',-1)" style="width:24px;height:24px;border-radius:6px;background:rgba(148,163,184,.1);border:1px solid var(--br);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0">↑</div>'+
+            '<div onclick="moveEx('+r.id+','+ei+',1)" style="width:24px;height:24px;border-radius:6px;background:rgba(148,163,184,.1);border:1px solid var(--br);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0">↓</div>'+
             '<div class="editbtn" style="width:24px;height:24px;font-size:11px" onclick="openEditE('+r.id+','+ei+')">✏️</div>'+
             '<div class="delbtn" style="width:24px;height:24px;font-size:11px" onclick="delEx('+r.id+','+ei+')">🗑</div>'+
           '</div>';
@@ -564,8 +569,9 @@ function openEditR(id){EDIT_RID=id;var r=DB.find(function(x){return x.id===id;})
 function saveRound(){var nm=document.getElementById('r-name').value.trim();if(!nm){alert('أدخل اسم الجولة');return;}var d={name:nm,emoji:document.getElementById('r-emoji').value||'💪',tag:document.getElementById('r-tag').value||'—',desc:document.getElementById('r-desc').value,note:document.getElementById('r-note').value};if(EDIT_RID){var r=DB.find(function(x){return x.id===EDIT_RID;});Object.assign(r,d);}else{DB.push({id:NID++,ex:[],name:d.name,emoji:d.emoji,tag:d.tag,desc:d.desc,note:d.note});}saveStorage();closeOv('ov-round');renderAdmin();renderPlan();showToast('✅ تم الحفظ!');}
 function delRound(id){if(!confirm('حذف هذه الجولة؟'))return;DB=DB.filter(function(r){return r.id!==id;});saveStorage();renderAdmin();}
 function openAddE(rid){EDIT_RID_EX=rid;EDIT_EI=null;document.getElementById('oe-title').textContent='➕ تمرين جديد';['e-name','e-sets','e-reps','e-emoji','e-steps','e-error','e-tip'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('ov-ex').classList.add('on');}
-function openEditE(rid,ei){EDIT_RID_EX=rid;EDIT_EI=ei;var r=DB.find(function(x){return x.id===rid;});var ex=r.ex[ei];document.getElementById('oe-title').textContent='✏️ تعديل التمرين';document.getElementById('e-name').value=ex.name;document.getElementById('e-sets').value=ex.sets;document.getElementById('e-reps').value=ex.reps;document.getElementById('e-emoji').value=ex.emoji||'';document.getElementById('e-steps').value=(ex.steps||[]).join('\n');document.getElementById('e-error').value=ex.error||'';document.getElementById('e-tip').value=ex.tip||'';document.getElementById('ov-ex').classList.add('on');}
-function saveEx(){var nm=document.getElementById('e-name').value.trim();if(!nm){alert('أدخل اسم التمرين');return;}var ex={name:nm,sets:document.getElementById('e-sets').value||'3',reps:document.getElementById('e-reps').value||'10',emoji:document.getElementById('e-emoji').value||'🏋️',steps:document.getElementById('e-steps').value.split('\n').filter(function(s){return s.trim();}),error:document.getElementById('e-error').value,tip:document.getElementById('e-tip').value};var r=DB.find(function(x){return x.id===EDIT_RID_EX;});if(EDIT_EI!==null)r.ex[EDIT_EI]=ex;else r.ex.push(ex);saveStorage();closeOv('ov-ex');renderAdmin();showToast('✅ تم الحفظ!');}
+function openEditE(rid,ei){EDIT_RID_EX=rid;EDIT_EI=ei;var r=DB.find(function(x){return x.id===rid;});var ex=r.ex[ei];document.getElementById('oe-title').textContent='✏️ تعديل التمرين';document.getElementById('e-name').value=ex.name;document.getElementById('e-sets').value=ex.sets;document.getElementById('e-reps').value=ex.reps;document.getElementById('e-emoji').value=ex.emoji||'';document.getElementById('e-target-weight').value=ex.targetWeight||'';document.getElementById('e-steps').value=(ex.steps||[]).join('\n');document.getElementById('e-error').value=ex.error||'';document.getElementById('e-tip').value=ex.tip||'';document.getElementById('ov-ex').classList.add('on');}
+function saveEx(){var nm=document.getElementById('e-name').value.trim();if(!nm){alert('أدخل اسم التمرين');return;}var ex={name:nm,sets:document.getElementById('e-sets').value||'3',reps:document.getElementById('e-reps').value||'10',emoji:document.getElementById('e-emoji').value||'🏋️',targetWeight:document.getElementById('e-target-weight').value,steps:document.getElementById('e-steps').value.split('\n').filter(function(s){return s.trim();}),error:document.getElementById('e-error').value,tip:document.getElementById('e-tip').value};var r=DB.find(function(x){return x.id===EDIT_RID_EX;});if(EDIT_EI!==null)r.ex[EDIT_EI]=ex;else r.ex.push(ex);saveStorage();closeOv('ov-ex');renderAdmin();showToast('✅ تم الحفظ!');}
+function moveEx(rid,ei,dir){var r=DB.find(function(x){return x.id===rid;});var nx=ei+dir;if(nx<0||nx>=r.ex.length)return;var tmp=r.ex[ei];r.ex[ei]=r.ex[nx];r.ex[nx]=tmp;saveStorage();renderAdmin();showToast('✅ تم التثبيت!');}
 function delEx(rid,ei){if(!confirm('حذف هذا التمرين؟'))return;var r=DB.find(function(x){return x.id===rid;});r.ex.splice(ei,1);saveStorage();renderAdmin();}
 function closeOv(id){document.getElementById(id).classList.remove('on');}
 function loadSettings(){document.getElementById('st-name').value=USER.name||'';document.getElementById('st-age').value=USER.age||'';document.getElementById('st-weight').value=USER.weight||'';document.getElementById('st-height').value=USER.height||'';}
